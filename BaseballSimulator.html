@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Baseball Simulator</title>
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+	<script>
+	var user;
+	var myTeam;
+	var opTeam;
+	var lgAVG = 0.286;
+	var skTeam = {batter: [
+		{no:1, name:"Kim Gangmin", avg:0.298, PA: 267, AB: 235, H: 70, sB: 14, tB: 0, HR: 14, BB: 22}, 
+		{no:2, name:"Han Dongmin", avg:0.284, PA: 562, AB: 486, H: 138, sB: 31, tB: 0, HR: 41, BB: 52}, 
+		{no:3, name:"Jamie Romak", avg:0.316, PA: 616, AB: 528, H: 167, sB: 19, tB: 0, HR: 43, BB: 72}, 
+		{no:4, name:"Park Jeonggwon", avg:0.222, PA: 20, AB: 18, H: 4, sB: 1, tB: 0, HR: 1, BB: 1}, 
+		{no:5, name:"Kim Dongyeop", avg:0.252, PA: 446, AB: 421, H: 106, sB: 15, tB: 0, HR: 27, BB: 17}, 
+		{no:6, name:"Lee JaeWon", avg:0.329, PA: 471, AB: 407, H: 134, sB: 24, tB: 0, HR: 17, BB: 43}, 
+		{no:7, name:"Kim Seonghyeon", avg:0.277, PA: 462, AB: 415, H: 115, sB: 19, tB: 1, HR: 4, BB: 29}, 
+		{no:8, name:"Park Seunguk", avg:0.308, PA: 79, AB: 65, H: 20, sB: 3, tB: 0, HR: 0, BB: 10}, 
+		{no:9, name:"Kang Seungho", avg:0.255, PA: 212, AB: 184, H: 47, sB: 10, tB: 0, HR: 3, BB: 18}], 
+		pitcher: [{name: "Park Jonghun", era: 4.18, avg: 0.254}]}
+	var doTeam = {batter: [
+	{no:1, name:"Heo Gyeongmin", avg: 0.324,  PA: 577, AB: 516, H: 167, sB: 30, tB: 5, HR: 10, BB: 32}, 
+	{no:2, name:"Jung Subin", avg: 0.367, PA: 112, AB: 98, H: 36, sB: 2, tB: 1, HR: 2, BB: 11}, 
+	{no:3, name:"Park Geonu", avg: 0.326, PA: 529, AB: 488, H: 159, sB: 24, tB: 6, HR: 12, BB: 28}, 
+	{no:4, name:"Kim Jaehwan", avg: 0.334, PA: 602, AB: 527, H: 176, sB: 36, tB: 1, HR: 44, BB: 59}, 
+	{no:5, name:"Yang Uiji", avg: 0.358, PA: 503, AB: 439, H: 157, sB: 29, tB: 1, HR: 23, BB: 45}, 
+	{no:6, name:"Choi Juhwan", avg: 0.333, PA: 590, AB: 519, H: 173, sB: 39, tB: 6, HR: 26, BB: 51}, 
+	{no:7, name:"Oh Jaeil", avg: 0.279, PA: 477, AB: 401, H: 112, sB: 19, tB: 2, HR: 27, BB: 60}, 
+	{no:8, name:"Kim Jaeho", avg: 0.311, PA: 467, AB: 402, H: 125, sB: 20, tB: 0, HR: 16, BB: 52}, 
+	{no:9, name:"Oh Jaewon", avg: 0.313, PA: 521, AB: 473, H: 148, sB: 24, tB: 1, HR: 15, BB: 41}], 
+	pitcher: [{name: "Lindblom", era: 2.88, avg: 0.226}]}
+
+	var myscore = 0;
+	var oppscore = 0;
+	var innings = 1;
+	var status = "fielding";
+	var outs = 0;
+	var mybatter = 0;
+	var oppbatter = 0;
+	var batter;
+	var pitcher;
+	var base = 0;
+	var firstbase = 0;
+	var secondbase = 0;
+	var thirdbase = 0;
+
+	function startGame() {
+		$("#start-button").on("click", function(){
+			$("#start-screen").hide();
+			$("#start-button").hide();
+			selectTeam();
+		})
+	}
+	function selectTeam(){
+		$("#select-screen").show();
+		$("#SK-button").show();
+		$("#Doosan-button").show();
+
+		$("#SK-button").on("click", function(){
+			user = "SK"
+			myTeam = skTeam;
+			oppTeam = doTeam;
+			$("#team-tag").css("left", "300px");
+			showLineup(0);
+		})
+
+		$("#Doosan-button").on("click", function(){
+			user = "DO"
+			myTeam = doTeam;
+			oppTeam = skTeam;
+			$("#team-tag").css("left", "560px");
+			showLineup(1);
+		})
+	}
+	function showLineup(num){
+		$("#select-screen").hide();
+		$("#SK-button").hide();
+		$("#Doosan-button").hide();
+		if(num == 0){
+			$("#lineupsk-screen").show();
+		} else{
+			$("#lineupdo-screen").show();
+		}
+		$("#playball-button").show();
+
+		$("#playball-button").on("click", function(){
+			showplayBall();
+		})	
+	}
+	function showplayBall(){
+		$("#lineupsk-screen").hide();
+		$("#lineupdo-screen").hide();
+		$("#playball-button").hide();
+
+		$("#game-screen").show();
+		$("#team-tag").show();
+		$("#comment-screen").show();
+		$("#sk-score").show();
+		$("#do-score").show();
+		$("#vs").show();
+		$("#comment").show();
+
+		displayInfo();
+		playBall();
+	}
+	function playBall(){
+		$("#pitch-button").on("click", function(){
+			userClick();
+			var end = gameover();
+			if(end == 0){
+				umpireUpdate();
+				displayInfo();
+				outInfo();
+				runnerInfo();
+			}
+		})
+		$("#hit-button").on("click", function(){
+			userClick();
+			var end = gameover();
+			if(end == 0){
+				umpireUpdate();
+				displayInfo();
+				outInfo();
+				runnerInfo();
+			}
+		})
+	}
+	function userClick(){
+		var result = hit();
+		var score = 0;
+		if(result == 0){
+			outs ++;
+		} else{
+			if(result == 1 || result == -1){
+				if(firstbase == 0 && secondbase == 0 && thirdbase == 0){
+					firstbase = 1;
+					secondbase = 0;
+					thirdbase = 0;
+				}
+				else if(firstbase == 1 && secondbase == 0 && thirdbase == 0){
+					firstbase = 1;
+					secondbase = 1;
+					thirdbase = 0;
+				}
+				else if(firstbase == 0 && secondbase == 1 && thirdbase == 0){
+					firstbase = 1;
+					secondbase = 1;
+					thirdbase = 0;
+				}
+				else if(firstbase == 0 && secondbase == 0 && thirdbase == 1){
+					firstbase = 1;
+					secondbase = 0;
+					thirdbase = 1;
+				}
+				else if(firstbase == 1 && secondbase == 1 && thirdbase == 0){
+					firstbase = 1;
+					secondbase = 1;
+					thirdbase = 1;
+				}
+				else if(firstbase == 1 && secondbase == 0 && thirdbase == 1){
+					firstbase = 1;
+					secondbase = 1;
+					thirdbase = 1;
+				}
+				else if(firstbase == 0 && secondbase == 1 && thirdbase == 1){
+					firstbase = 1;
+					secondbase = 1;
+					thirdbase = 1;
+				}
+				else if(firstbase == 1 && secondbase == 1 && thirdbase == 1){
+					firstbase = 1;
+					secondbase = 1;
+					thirdbase = 1;
+					score = 1;
+				}
+			}
+			else if(result == 2){
+				if(firstbase == 0 && secondbase == 0 && thirdbase == 0){
+					firstbase = 0;
+					secondbase = 1;
+					thirdbase = 0;
+				}
+				else if(firstbase == 1 && secondbase == 0 && thirdbase == 0){
+					firstbase = 0;
+					secondbase = 1;
+					thirdbase = 1;
+				}
+				else if(firstbase == 0 && secondbase == 1 && thirdbase == 0){
+					firstbase = 0;
+					secondbase = 1;
+					thirdbase = 0;
+					score = 1;
+				}
+				else if(firstbase == 0 && secondbase == 0 && thirdbase == 1){
+					firstbase = 0;
+					secondbase = 1;
+					thirdbase = 0;
+					score = 1;
+				}
+				else if(firstbase == 1 && secondbase == 1 && thirdbase == 0){
+					firstbase = 0;
+					secondbase = 1;
+					thirdbase = 1;
+					score = 1;
+				}
+				else if(firstbase == 1 && secondbase == 0 && thirdbase == 1){
+					firstbase = 0;
+					secondbase = 1;
+					thirdbase = 1;
+					score = 1;
+				}
+				else if(firstbase == 0 && secondbase == 1 && thirdbase == 1){
+					firstbase = 0;
+					secondbase = 1;
+					thirdbase = 0;
+					score = 2;
+				}
+				else if(firstbase == 1 && secondbase == 1 && thirdbase == 1){
+					firstbase = 0;
+					secondbase = 1;
+					thirdbase = 1;
+					score = 2;
+				}
+			}
+			else if(result == 3){
+				if(firstbase == 0 && secondbase == 0 && thirdbase == 0){
+					firstbase = 0;
+					secondbase = 0;
+					thirdbase = 1;
+				}
+				else if(firstbase == 1 && secondbase == 0 && thirdbase == 0){
+					firstbase = 0;
+					secondbase = 0;
+					thirdbase = 1;
+					score = 1;
+				}
+				else if(firstbase == 0 && secondbase == 1 && thirdbase == 0){
+					firstbase = 0;
+					secondbase = 0;
+					thirdbase = 1;
+					score = 1;
+				}
+				else if(firstbase == 0 && secondbase == 0 && thirdbase == 1){
+					firstbase = 0;
+					secondbase = 0;
+					thirdbase = 1;
+					score = 1;
+				}
+				else if(firstbase == 1 && secondbase == 1 && thirdbase == 0){
+					firstbase = 0;
+					secondbase = 0;
+					thirdbase = 1;
+					score = 2;
+				}
+				else if(firstbase == 1 && secondbase == 0 && thirdbase == 1){
+					firstbase = 0;
+					secondbase = 0;
+					thirdbase = 1;
+					score = 2;
+				}
+				else if(firstbase == 0 && secondbase == 1 && thirdbase == 1){
+					firstbase = 0;
+					secondbase = 0;
+					thirdbase = 1;
+					score = 2;
+				}
+				else if(firstbase == 1 && secondbase == 1 && thirdbase == 1){
+					firstbase = 0;
+					secondbase = 0;
+					thirdbase = 1;
+					score = 3;
+				}
+			}
+			else if(result == 4){
+				if(firstbase == 0 && secondbase == 0 && thirdbase == 0){
+					score = 1;
+				}
+				else if(firstbase == 1 && secondbase == 0 && thirdbase == 0){
+					score = 2;
+				}
+				else if(firstbase == 0 && secondbase == 1 && thirdbase == 0){
+					score = 2;
+				}
+				else if(firstbase == 0 && secondbase == 0 && thirdbase == 1){
+					score = 2;
+				}
+				else if(firstbase == 1 && secondbase == 1 && thirdbase == 0){
+					score = 3;
+				}
+				else if(firstbase == 1 && secondbase == 0 && thirdbase == 1){
+					score = 3;
+				}
+				else if(firstbase == 0 && secondbase == 1 && thirdbase == 1){
+					score = 3;
+				}
+				else if(firstbase == 1 && secondbase == 1 && thirdbase == 1){
+					score = 4;
+				}
+				firstbase = 0;
+				secondbase = 0;
+				thirdbase = 0;
+			}
+		}
+
+		if(result == 1){
+			$("#comment").text("Hit!");
+			$("#comment").css("left", "615px");
+		}
+		else if(result == -1){
+			$("#comment").text("BaseOnBall..");
+			$("#comment").css("left", "570px");
+		}
+		else if(result == 2){
+			$("#comment").text("Double!!");
+			$("#comment").css("left", "590px");
+		}
+		else if(result == 3){
+			$("#comment").text("Triple!!!");
+			$("#comment").css("left", "590px");
+		}
+		else if(result == 4){
+			$("#comment").text("Homerun~!");
+			$("#comment").css("left", "580px");
+		}
+		else if(result == 0){
+			$("#comment").text("Out!");
+			$("#comment").css("left", "615px");
+		}
+		if(status == "fielding"){
+			oppscore += score;
+			if(oppbatter == 8)
+				oppbatter = 0;
+			else
+				oppbatter++;
+		}else{
+			myscore += score;
+			if(mybatter == 8)
+				mybatter = 0;
+			else
+				mybatter++;
+		}
+	}
+	function umpireUpdate(){
+		if(outs == 3){
+			outs = 0;
+			if(status == "fielding") {
+				status = "batting";
+			}
+			else{
+				innings ++;
+				status = "fielding"
+			}
+			firstbase = 0;
+			secondbase = 0;
+			thirdbase = 0;
+		}
+	}
+	function displayInfo(){
+		if(status == "fielding") {
+			pitcher = myTeam["pitcher"][0];
+			// console.log(pitcher);
+			batter = oppTeam["batter"][oppbatter];
+			// console.log(batter);
+			$("#pitch-button").show();
+			$("#hit-button").hide();
+		}else {
+			pitcher = oppTeam["pitcher"][0];
+			// console.log(pitcher);
+			batter = myTeam["batter"][mybatter];
+			// console.log(batter);
+			$("#pitch-button").hide();
+			$("#hit-button").show();
+		}
+
+		if(user == "SK"){
+			$("#sk-score").text(myscore);
+			$("#do-score").text(oppscore);
+		} else{
+			$("#sk-score").text(oppscore);
+			$("#do-score").text(myscore);
+		}
+		
+		$("#innings").text(innings);
+		$("#status").text(status);
+		$("#pitcher-name").text(pitcher["name"]);
+		$("#era").text(pitcher["era"])
+		$("#batter-name").text(batter["name"]);
+		$("#avg").text(batter["avg"]);
+
+		$("#sk-score").show();
+		$("#do-score").show();
+		$("#innings").show();
+		$("#status").show();
+		$("#pitcher-name").show();	
+		$("#era").show();	
+		$("#batter-name").show();	
+		$("#avg").show();
+	}
+	function outInfo(){
+		if(outs == 0){
+			$("#out1-light").hide();
+			$("#out2-light").hide();
+			$("#out3-light").hide();
+		}
+		else if(outs == 1){
+			$("#out1-light").show();
+			$("#out2-light").hide();
+			$("#out3-light").hide();
+		}
+		else if(outs == 2){
+			$("#out1-light").show();
+			$("#out2-light").show();
+			$("#out3-light").hide();
+		}
+		else{
+			$("#out1-light").show();
+			$("#out2-light").show();
+			$("#out3-light").show();
+		}
+	}
+	function runnerInfo(){
+		if(firstbase == 1){
+			$("#firstbase-light").show();
+		} else{
+			$("#firstbase-light").hide();
+		}
+
+		if(secondbase == 1){
+			$("#secondbase-light").show();
+		} else{
+			$("#secondbase-light").hide();
+		}	
+
+		if(thirdbase == 1){
+			$("#thirdbase-light").show();
+		} else{
+			$("#thirdbase-light").hide();
+		}
+	}
+	function hit(){
+		var hit_avg = log5Theory();
+		var first_avg = (batter["H"] - batter["sB"] - batter["tB"] - batter["HR"]) / batter["H"];
+		first_avg = Math.round(first_avg * 1000) / 1000.0;
+		var second_avg = batter["sB"] / batter["H"];
+		second_avg = Math.round(second_avg * 1000) / 1000.0;
+		var third_avg = batter["tB"] / batter["H"];
+		third_avg = Math.round(third_avg * 1000) / 1000.0;
+		var hr_avg = batter["HR"] / batter["H"];
+		hr_avg = Math.round(hr_avg * 1000) / 1000.0;
+		var bb_avg = batter["BB"] / (batter["PA"] - batter["H"]);
+		bb_avg = Math.round(bb_avg * 1000) / 1000.0;
+
+		var result;
+		var r1 = Math.random();
+		if (r1 < hit_avg) {
+			var r2 = Math.random();
+			if (r2 < first_avg)
+				result = 1;
+			else if (r2 < first_avg + second_avg)
+				result = 2;
+			else if (r2 < first_avg + second_avg + hr_avg)
+				result = 4;
+			else
+				result = 3;
+		} else {
+			var r3 = Math.random();
+			if (r3 < bb_avg)
+				result = -1;
+			else
+				result = 0;
+		}
+
+		// console.log(result);
+		return result;
+	}
+	function log5Theory(){
+		var cal_avg0 = new Array(5);
+		cal_avg0[0] = batter["avg"];
+		cal_avg0[1] = lgAVG;
+		cal_avg0[2] = calLog5(cal_avg0[0]);
+		cal_avg0[3] = calLog5(cal_avg0[1]);
+		cal_avg0[4] = cal_avg0[2] / (cal_avg0[2] + cal_avg0[3]);
+		cal_avg0[4] = (Math.round(cal_avg0[4] * 1000) / 1000.0);
+
+		var cal_avg1 = new Array(5);
+		cal_avg1[0] = 1.0 - pitcher["avg"];
+		cal_avg1[1] = 1 - lgAVG;
+		cal_avg1[2] = calLog5(cal_avg1[0]);
+		cal_avg1[3] = calLog5(cal_avg1[1]);
+		cal_avg1[4] = cal_avg1[2] / (cal_avg1[2] + cal_avg1[3]);
+		cal_avg1[4] = (Math.round(cal_avg1[4] * 1000) / 1000.0);
+
+		var cal_avg2 = new Array(5);
+		cal_avg2[0] = cal_avg0[4];
+		cal_avg2[1] = cal_avg1[4];
+		cal_avg2[2] = calLog5(cal_avg2[0]);
+		cal_avg2[3] = calLog5(cal_avg2[1]);
+		cal_avg2[4] = cal_avg2[2] / (cal_avg2[2] + cal_avg2[3]);
+		cal_avg2[4] = (Math.round(cal_avg2[4] * 1000) / 1000.0);
+
+		var cal_avg3 = new Array(5);
+		cal_avg3[0] = 0.5;
+		cal_avg3[1] = lgAVG;
+		cal_avg3[2] = calLog5(cal_avg3[0]);
+		cal_avg3[3] = calLog5(cal_avg3[1]);
+		cal_avg3[4] = cal_avg3[2] / (cal_avg3[2] + cal_avg3[3]);
+		cal_avg3[4] = (Math.round(cal_avg3[4] * 1000) / 1000.0);
+
+		var cal_avg4 = new Array(5);
+		cal_avg4[0] = cal_avg2[4];
+		cal_avg4[1] = cal_avg3[4];
+		cal_avg4[2] = calLog5(cal_avg4[0]);
+		cal_avg4[3] = calLog5(cal_avg4[1]);
+		cal_avg4[4] = cal_avg4[2] / (cal_avg4[2] + cal_avg4[3]);
+		cal_avg4[4] = (Math.round(cal_avg4[4] * 1000) / 1000.0);
+
+		return cal_avg4[4]
+	}
+	function calLog5(a) {
+		var flag = a / (2 * (1 - a));
+		return (Math.round(flag * 1000) / 1000.0);
+	}
+	function gameover(){
+		if(status == "fielding" && outs == 3 && innings == 6){
+			if(myscore > oppscore) {
+				$("#game-screen").hide();
+				$("#innings").hide();
+				$("#status").hide();
+				$("#batter-name").hide();
+				$("#avg").hide();
+				$("#pitcher-name").hide();
+				$("#era").hide();
+				$("#hit-button").hide();
+				$("#pitch-button").hide();
+				$("#comment-screen").hide()
+				$("#comment").hide();
+				$("#out1-light").hide();
+				$("#out2-light").hide();
+				$("#out3-light").hide();
+				$("#firstbase-light").hide();
+				$("#secondbase-light").hide();
+				$("#thirdbase-light").hide();
+
+				$("#win-screen").show();
+				return 1;
+			}
+		}
+		else if(status == "batting" && outs == 3 && innings == 6){
+			if(myscore > oppscore){
+				$("#win-screen").show();
+			}
+			else if(myscore < oppscore){
+				$("#lose-screen").show();
+			}
+			else {
+				$("#draw-screen").show();
+			}
+			$("#game-screen").hide();
+			$("#innings").hide();
+			$("#status").hide();
+			$("#batter-name").hide();
+			$("#avg").hide();
+			$("#pitcher-name").hide();
+			$("#era").hide();
+			$("#hit-button").hide();
+			$("#pitch-button").hide();
+			$("#comment-screen").hide()
+			$("#comment").hide();
+			$("#out1-light").hide();
+			$("#out2-light").hide();
+			$("#out3-light").hide();
+			$("#firstbase-light").hide();
+			$("#secondbase-light").hide();
+			$("#thirdbase-light").hide();	$("#game-screen").hide();
+			return 1;
+		}
+
+		return 0;		
+	}
+	$(document).ready(function(){
+		startGame();
+	})
+	</script>
+	<style>
+	body {
+        margin: 0;
+        padding: 0;
+        background: black;
+    }
+	#game-area{
+		width: 133vmin;
+        height: 100vmin;
+        margin: auto;
+	}
+	/*screen style*/
+	.screen{
+		position: relative;
+	}
+	#start-screen{
+		position: absolute;
+	}
+	#select-screen{
+		position: absolute;
+		display: none;
+	}
+	#lineupsk-screen{
+		position: absolute;
+		display: none;
+	}
+	#lineupdo-screen{
+		position: absolute;
+		display: none;
+	}
+	#game-screen{
+		position: absolute;
+		display: none;
+	}
+	#comment-screen{
+		top: 600px;
+		left: 415px;
+		position: absolute;
+		display: none;
+	}
+	#win-screen{
+		position: absolute;
+		display: none;
+	}
+	#lose-screen{
+		position: absolute;
+		display: none;
+	}
+	#draw-screen{
+		position: absolute;
+		display: none;
+	}
+	/*button style*/
+	.button{
+		position: relative;
+	}
+	#start-button{
+		top: 550px;
+        left: 300px;
+		position: absolute;
+		/*display: none;*/
+	}
+	#SK-button{
+		top: 480px;
+		left: 150px;
+		position: absolute;
+		display: none;
+	}
+	#Doosan-button{
+		top: 480px;
+		left: 640px;
+		position: absolute;
+		display: none;
+	}
+	#playball-button{
+		top: 650px;
+        left: 310px;
+		position: absolute;
+		display: none;
+	}
+	#hit-button{
+		top: 630px;
+        left: 30px;
+		position: absolute;
+		display: none;
+	}
+	#pitch-button{
+		top: 630px;
+        left: 30px;
+		position: absolute;
+		display: none;
+	}
+	/*light style*/
+	.light{
+		position: relative;
+	}
+	#out1-light{
+		top: 156px;
+		left: 93px;
+		position: absolute;
+		display: none;
+	}
+	#out2-light{
+		top: 156px;
+		left: 133px;
+		position: absolute;
+		display: none;
+	}
+	#out3-light{
+		top: 156px;
+		left: 173px;
+		position: absolute;
+		display: none;
+	}
+	#firstbase-light{
+		top: 440px;
+		left: 800px;
+		position: absolute;
+		display: none;
+	}
+	#secondbase-light{
+		top: 320px;
+		left: 613px;
+		position: absolute;
+		display: none;
+	}
+	#thirdbase-light{
+		top: 440px;
+		left: 428px;
+		position: absolute;
+		display: none;
+	}
+	/*dispaly style*/
+	.display{
+		position: relative;
+	}
+	#team-tag{
+		position: absolute;
+		display: none;
+	}
+	#sk-score{
+		top: 38px;
+		left: 400px;
+		color: white;
+		position: absolute;
+		display: none;
+	}
+	#vs{
+		top: 38px;
+		left: 450px;
+		color: gray;
+		position: absolute;
+		display: none;
+	}
+	#do-score{
+		top: 38px;
+		left: 520px;
+		color: white;
+		position: absolute;
+		display: none;
+	}
+	#pitcher-name{
+		top: 145px;
+		left: 300px;
+		color: white;
+		position: absolute;
+		display: none;
+	}
+	#batter-name{
+		top: 145px;
+		left: 645px;
+		color: white;
+		position: absolute;
+		display: none;
+	}
+	#era{
+		top: 148px;
+		left: 510px;
+		color: white;
+		position: absolute;
+		display: none;
+	}
+	#avg{
+		top: 148px;
+		left: 880px;
+		color: white;
+		position: absolute;
+		display: none;
+	}
+	#innings{
+		top: 300px;
+		left: 145px;
+		color: white;
+		position: absolute;
+		display: none;
+	}
+	#status{
+		top: 445px;
+		left: 110px;
+		color: white;
+		position: absolute;
+		display: none;
+	}
+	#comment{
+		top: 600px;
+		left: 590px;
+		color: white;
+		position: absolute;
+		display: none;
+	}
+	</style>
+</head>
+<body>
+	<div id="game-area">
+		<div class="screen">
+			<img id="start-screen" src="img/COMP4021_startscreen.png">
+			<img id="select-screen" src="img/COMP4021_teamselect.png">
+			<img id="lineupsk-screen" src="img/COMP4021_lineupsk.png">
+			<img id="lineupdo-screen" src="img/COMP4021_lineupdo.png">
+			<img id="game-screen" src="img/COMP4021_gamescreen.png">
+			<img id="comment-screen" src="img/COMP4021_comment.png">
+			<img id="win-screen" src="img/COMP4021_win.png">
+			<img id="lose-screen" src="img/COMP4021_lose.png">
+			<img id="draw-screen" src="img/COMP4021_draw.png">
+		</div>
+		<div class="button">
+			<img id="start-button" src="img/COMP4021_startbutton.png">
+			<img id="SK-button" src="img/COMP4021_selectbutton.png">
+			<img id="Doosan-button" src="img/COMP4021_selectbutton.png">
+			<img id="playball-button" src="img/COMP4021_playballbutton.png">
+			<img id="hit-button" src="img/COMP4021_hitbutton.png">
+			<img id="pitch-button" src="img/COMP4021_pitchbutton.png">
+		</div>
+		<div class="light">
+			<img id="out1-light" src="img/COMP4021_outcount.png">
+			<img id="out2-light" src="img/COMP4021_outcount.png">
+			<img id="out3-light" src="img/COMP4021_outcount.png">
+			<img id="firstbase-light" src="img/COMP4021_runner.png">
+			<img id="secondbase-light" src="img/COMP4021_runner.png">
+			<img id="thirdbase-light" src="img/COMP4021_runner.png">
+		</div>
+		<div class="display">
+			<img id="team-tag" src="img/team.png">
+			<h1 id="sk-score">0</h1>
+			<h1 id="vs">VS</h1>
+			<h1 id="do-score">0</h1>
+			<h4 id="pitcher-name"></h4>
+			<h3 id="era"></h3>
+			<h4 id="batter-name"></h4>
+			<h3 id="avg"></h3>
+			<h2 id="innings"></h2>
+			<h2 id="status"></h2>
+			<h2 id="comment">PlayBall!</h2>
+		</div>
+	</div>
+</body>
+</html>
